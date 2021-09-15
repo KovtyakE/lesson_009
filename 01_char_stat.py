@@ -21,12 +21,10 @@
 # Упорядочивание по частоте - по убыванию. Ширину таблицы подберите по своему вкусу
 # Требования к коду: он должен быть готовым к расширению функциональности. Делать сразу на классах.
 
-# TODO здесь ваш код
-
 import zipfile
 
 
-class Statistics_for_file:
+class StatisticsForFile:
     def __init__(self, file_name):
         self.file_name = file_name
         self.stat = {}
@@ -55,33 +53,49 @@ class Statistics_for_file:
             else:
                 continue
 
-    def sort_by_count(self):
-        self.sorted_dict = sorted(self.stat, key=self.stat.get)
-        for key in self.sorted_dict:
-            self.sorted_stat[key] = self.stat[key]
-
-    # todo
-    # способ отсортировать в одном методе?
-    def sort_by_count_reversed(self):
-        pass
-
-    def sort_by_name(self):
-        pass
-
     def print_sorted_stat(self):
-        print('{char:-<6}+{stat:->8}'.format(char='+', stat='+'))
-        print('|{char:^5}|{stat:>7}|'.format(char='Буква', stat='Частота'))
-        print('{char:-<6}+{stat:->8}'.format(char='+', stat='+'))
+        print('{char:-<6}+{stat:->9}'.format(char='+', stat='+'))
+        print('|{char:^5}|{stat:>8}|'.format(char='Буква', stat='Частота'))
+        print('{char:-<6}+{stat:->9}'.format(char='+', stat='+'))
         for key in self.sorted_stat:
-            print('|{key:^5}|{value:>7}|'.format(key=key, value=self.stat[key]))
+            print('|{key:^5}|{value:>8}|'.format(key=key, value=self.stat[key]))
+        summary_count = sorted_file.summary_count_of_symbols()
+        print('|{char:^5}|{stat:>8}|'.format(char='Итого', stat=summary_count))
 
 
-file_stat = Statistics_for_file(file_name='python_snippets/voyna-i-mir.txt.zip')
+class Sort:
+    def sort(self, key, reverse):
+        sorted_dict = sorted(file_stat.stat, key=key, reverse=reverse)
+        for key in sorted_dict:
+            file_stat.sorted_stat[key] = file_stat.stat[key]
+
+    def summary_count_of_symbols(self):
+        count_of_symbols = 0
+        for key in file_stat.sorted_stat:
+            count_of_symbols += file_stat.stat[key]
+        return count_of_symbols
+
+
+class SortByCount(Sort):
+    def sort_by_count(self, reverse=False):
+        key = file_stat.stat.get  # sorting by values
+        self.sort(key, reverse)
+
+
+class SortByName(Sort):
+    def sort_by_name(self, reverse=False):
+        key = None  # no specific keys of sorting
+        self.sort(key, reverse)
+
+
+file_stat = StatisticsForFile(file_name='python_snippets/voyna-i-mir.txt.zip')
 file_stat.unzip()
 file_stat.collect()
-file_stat.sort_by_count()
+sorted_file = SortByCount()
+sorted_file.sort_by_count(reverse=False)
+# sorted_file = SortByName()
+# sorted_file.sort_by_name(reverse=True)
 file_stat.print_sorted_stat()
-
 
 # После выполнения первого этапа нужно сделать упорядочивание статистики
 #  - по частоте по возрастанию
