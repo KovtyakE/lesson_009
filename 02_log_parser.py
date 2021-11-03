@@ -21,57 +21,89 @@
 
 
 class LogParser:
-    def __init__(self, filename):
-        self.log_file = filename
-        self.output_file = 'output.txt'
+    def __init__(self, input_file, output_file):
+        self.log_file = input_file
+        self.output_file = output_file
 
-    def write_stat_in_file(self):
+    def open_and_compare(self, value_to_compare):
         output_file_create = open(file=self.output_file, mode='w', encoding='cp1251')
         output_file_create.close()
+        with open(file=test.log_file, mode='r', encoding='cp1251') as logfile:
+            if value_to_compare == 'minutes':
+                group.compare_lines(file=logfile)
+            elif value_to_compare == 'hours':
+                group_hour.group_by_hours(file=logfile)
+            elif value_to_compare == 'days':
+                group_day.group_by_days(file=logfile)
+            elif value_to_compare == 'months':
+                group_month.group_by_months(file=logfile)
+            elif value_to_compare == 'years':
+                group_year.group_by_years(file=logfile)
+            else:
+                print('Wrong value to compare')
 
-        with open(file=self.log_file, mode='r', encoding='cp1251') as file:
-            prev_line = 0
-            for line in file:
-                if 'NOK' in line:
-                    # TODO
-                    #  group.somefunc which compares prev and current lines[:some val for templates, ---
-                    #  ---standard :17] and counting it
-                    #  somefunc which cuts our string after comparing
-                    #  somefunc for write in file
-                    self.count = 0
-                    self.current_line = line[:17] + line[27]  # all symbols before ":seconds" + symbol ']'
-                    if self.current_line == prev_line:
-                        continue
-                    prev_line = self.current_line
-                    group.compare_lines()
-                    with open(file=self.output_file, mode='a', encoding='cp1251') as output_file:
-                        output_file.write(self.current_line)
-                        output_file.write(' ')
-                        output_file.write(str(self.count))
-                        output_file.write('\n')
-
-                    # преобразовать в читабельный вид строку
-                    # проверить наличие такой строки в файле, если есть:
-                    #     изменить число после выведенной строки на каунт+1
-                    # если нет:
-                    #     добавить строку в файл с цифрой 1
+    def write_in_file(self, line, stop, count):
+        line_to_write = line[:stop] + line[27]  # all symbols before ":stop sign" + symbol ']'
+        with open(file=self.output_file, mode='a', encoding='cp1251') as output_file:
+            output_file.write(line_to_write)
+            output_file.write(' ')
+            output_file.write(str(count))
+            output_file.write('\n')
 
 
 class GroupEvents:
-    def compare_lines(self, start=1, stop=17):  # full compare (yyyy-mm-dd hh:mm)
-        with open(file=test.log_file, mode='r', encoding='cp1251') as file:
-            for line in file:  # lines from another class (test)
-                if 'NOK' in line:
-                    if test.current_line[start:stop] == line[start:stop]:
-                        test.count += 1
+    def __init__(self):
+        self.stop = 17  # first 17 symbols, '[yyyy-mm-dd hh:mm'
+        self.count = 0
+        self.prev_line = ''
 
+    def compare_lines(self, file):
+        for line in file:
+            if 'NOK' in line:
+                if line[:self.stop] == self.prev_line[:self.stop]:
+                    self.count += 1
+                else:
+                    if self.prev_line != '':
+                        test.write_in_file(line=self.prev_line, stop=self.stop, count=self.count)
+                    self.count = 1
+                    self.prev_line = line
+        test.write_in_file(line=self.prev_line, stop=self.stop, count=self.count)
 
-group = GroupEvents()
-test = LogParser(filename='events.txt')
-test.write_stat_in_file()
 
 # После выполнения первого этапа нужно сделать группировку событий
 #  - по часам
 #  - по месяцу
 #  - по году
 # Для этого пригодится шаблон проектирование "Шаблонный метод" см https://goo.gl/Vz4828
+
+class GroupByHours(GroupEvents):
+    def group_by_hours(self, file):
+        self.stop = 14  # first 14 symbols, '[yyyy-mm-dd hh'
+        self.compare_lines(file=file)
+
+
+class GroupByDays(GroupEvents):
+    def group_by_days(self, file):
+        self.stop = 11  # first 11 symbols, '[yyyy-mm-dd'
+        self.compare_lines(file=file)
+
+
+class GroupByMonths(GroupEvents):
+    def group_by_months(self, file):
+        self.stop = 8  # first 8 symbols, '[yyyy-mm'
+        self.compare_lines(file=file)
+
+
+class GroupByYears(GroupEvents):
+    def group_by_years(self, file):
+        self.stop = 5  # first 5 symbols, '[yyyy'
+        self.compare_lines(file=file)
+
+
+group = GroupEvents()
+group_hour = GroupByHours()
+group_day = GroupByDays()
+group_month = GroupByMonths()
+group_year = GroupByYears()
+test = LogParser(input_file='events.txt', output_file='output.txt')
+test.open_and_compare(value_to_compare='months')  # can be 'minutes', 'hours', 'days', 'months', 'years'.
